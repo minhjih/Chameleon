@@ -5,6 +5,7 @@
 
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { WebviewView } from '../../webviewView/browser/webviewViewService.js';
+import { ChameleonModelStore } from '../../chameleon/common/modelStore.js';
 
 
 export class ChameleonModelStudioProvider {
@@ -25,7 +26,23 @@ export class ChameleonModelStudioProvider {
 
 
 		webviewView.webview.setHtml(this._getHtmlForWebview());
-		return Promise.resolve(); // Added return for Promise<void>
+
+		// Handle messages from the webview
+		(webviewView.webview as any).onDidReceiveMessage((message: any) => {
+			switch (message.command) {
+				case 'createModel':
+					const modelStore = ChameleonModelStore.getInstance();
+					modelStore.addModel({
+						id: message.id,
+						name: message.name,
+						description: message.description,
+						isFineTuned: true
+					});
+					break;
+			}
+		});
+
+		return Promise.resolve();
 	}
 
 	private _getHtmlForWebview(): string {
@@ -346,9 +363,19 @@ export class ChameleonModelStudioProvider {
 					trainBtn.disabled = false;
 					trainBtn.style.opacity = '1';
 
+                    const newModelName = 'fine-tuned-' + Math.floor(Math.random() * 1000);
+
 					setTimeout(() => {
 						progressContainer.style.display = 'none';
-						addModelToList('fine-tuned-' + Math.floor(Math.random() * 1000), baseModelName);
+						addModelToList(newModelName, baseModelName);
+
+                        // Notify Extension Host
+                        vscode.postMessage({
+                            command: 'createModel',
+                            id: newModelName,
+                            name: newModelName + ' (Studio)',
+                            description: 'Fine-tuned on ' + baseModelName
+                        });
 					}, 1000);
 				}
 

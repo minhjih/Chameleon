@@ -15,6 +15,7 @@ import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IViewDescriptorService } from '../../../common/views.js';
 import * as dom from '../../../../base/browser/dom.js';
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { ChameleonModelStore } from '../../chameleon/common/modelStore.js';
 
 export class ChameleonChatView extends ViewPane {
 
@@ -272,20 +273,20 @@ export class ChameleonChatView extends ViewPane {
         dom.append(sendBtn, dom.$('span.codicon.codicon-send'));
 
         // Model Selector Logic
-        let currentModel = 'GPT-4 (Default)';
-        const models = [
-            'GPT-4 (Default)',
-            'Qwen/Qwen3-Coder-30B-A3B-Instruct',
-            'unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF',
-            'deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct',
-            'Qwen/Qwen2.5-Coder-7B-Instruct-GGUF',
-            'Chameleon-Pro (Fine-tuned)'
-        ];
+        const modelStore = ChameleonModelStore.getInstance();
+        let models = modelStore.getModels();
+        let currentModel = models[0].name; // Default to first (Base Model)
         let modelIndex = 0;
+
+        // Subscribe to updates
+        this._register(modelStore.onDidChangeModels(() => {
+            models = modelStore.getModels();
+            // Optional: Notify user or just silently update list availability
+        }));
 
         agentBtn.onclick = () => {
             modelIndex = (modelIndex + 1) % models.length;
-            currentModel = models[modelIndex];
+            currentModel = models[modelIndex].name;
             agentBtn.textContent = '';
             // Truncate long names for display
             const displayModel = currentModel.length > 20 ? currentModel.substring(0, 18) + '...' : currentModel;
