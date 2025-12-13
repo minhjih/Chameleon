@@ -34,6 +34,8 @@ import { ChatViewPane } from './chatViewPane.js';
 
 // --- Chat Container &  View Registration
 
+// Chameleon Note: Disabled default Chat view to replace with Chameleon Chat.
+/*
 const chatViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 	id: ChatViewContainerId,
 	title: localize2('chat.viewContainer.label', "Chat"),
@@ -43,7 +45,9 @@ const chatViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(Vi
 	hideIfEmpty: true,
 	order: 1,
 }, ViewContainerLocation.AuxiliaryBar, { isDefault: true, doNotRegisterOpenCommand: true });
+*/
 
+/*
 const chatViewDescriptor: IViewDescriptor = {
 	id: ChatViewId,
 	containerIcon: chatViewContainer.icon,
@@ -75,6 +79,7 @@ const chatViewDescriptor: IViewDescriptor = {
 	)
 };
 Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([chatViewDescriptor], chatViewContainer);
+*/
 
 const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatParticipantContribution[]>({
 	extensionPoint: 'chatParticipants',
