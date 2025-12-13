@@ -14,6 +14,7 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IViewDescriptorService } from '../../../common/views.js';
 import * as dom from '../../../../base/browser/dom.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 
 export class ChameleonChatView extends ViewPane {
 
@@ -31,6 +32,7 @@ export class ChameleonChatView extends ViewPane {
         @IOpenerService openerService: IOpenerService,
         @IThemeService themeService: IThemeService,
         @IHoverService hoverService: IHoverService,
+        @ICodeEditorService private readonly codeEditorService: ICodeEditorService,
     ) {
         super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
     }
@@ -291,6 +293,19 @@ export class ChameleonChatView extends ViewPane {
             dom.append(agentBtn, dom.$('span.codicon.codicon-chevron-down'));
         };
 
+        // --- Copilot-Compatible API Interfaces ---
+        interface IChatMessage {
+            role: 'system' | 'user' | 'assistant';
+            content: string;
+        }
+
+        interface IChatCompletionRequest {
+            model: string;
+            messages: IChatMessage[];
+            temperature: number;
+            stream: boolean;
+        }
+
         const sendMessage = () => {
             const text = this.input.value;
             if (text.trim()) {
@@ -300,8 +315,40 @@ export class ChameleonChatView extends ViewPane {
                 this.addMessage('user', text);
                 this.input.value = '';
 
+                // 1. Build Context (Simulating System Prompt)
+                const activeEditor = this.codeEditorService.getActiveCodeEditor();
+                let systemContext = 'You are a helpful AI assistant for coding.';
+
+                if (activeEditor && activeEditor.hasModel()) {
+                    const uri = activeEditor.getModel().uri.path;
+                    const filename = uri.split('/').pop();
+                    const selection = activeEditor.getSelection();
+                    const selectedText = activeEditor.getModel().getValueInRange(selection);
+
+                    systemContext += `\n\nActive File: ${filename} (${uri})`;
+                    if (selectedText && !selection.isEmpty()) {
+                        systemContext += `\n\nSelected Code:\n\`\`\`\n${selectedText}\n\`\`\``;
+                    }
+                }
+
+                // 2. Construct Payload (Standard Format)
+                const requestPayload: IChatCompletionRequest = {
+                    model: currentModel,
+                    messages: [
+                        { role: 'system', content: systemContext },
+                        { role: 'user', content: text }
+                    ],
+                    temperature: 0.1,
+                    stream: true
+                };
+
+                // Log payload for debugging/verification of structure
+                console.log('[Chameleon Chat] Sending Request:', JSON.stringify(requestPayload, null, 2));
+
+                // 3. Simulate Response (Mock)
                 setTimeout(() => {
-                    this.addMessage('ai', `[Using ${currentModel}] I'm on it! I'll help you build that.`);
+                    const responseContent = `[Using **${requestPayload.model}**]\nI received your request formatted as a standard API payload.\n\n**System Context**:\n\`${systemContext.substring(0, 50)}...\`\n\nI am ready for fine-tuning!`;
+                    this.addMessage('ai', responseContent);
                 }, 800);
             }
         };
